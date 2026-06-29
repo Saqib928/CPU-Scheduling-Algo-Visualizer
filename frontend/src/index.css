@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-900 text-slate-100 font-sans;
+  }
+}
+
+/* Notebook styling */
+.notebook-paper {
+  background-color: #fdf5e6;
+  background-image: linear-gradient(#94a3b8 1px, transparent 1px);
+  background-size: 100% 2rem;
+  line-height: 2rem;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  color: #333;
+}
+
+.font-handwritten {
+  font-family: 'Kalam', cursive;
+}
+
+.font-handwritten-title {
+  font-family: 'Caveat', cursive;
+}
