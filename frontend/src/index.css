@@ -89,3 +89,19 @@
     background: rgba(255, 255, 255, 0.2);
     border-radius: 10px;
 }
+
+.font-handwritten {
+  font-family: 'Kalam', cursive;
+}
+
+.font-handwritten-title {
+  font-family: 'Caveat', cursive;
+}
+
+.notebook-paper {
+  background-color: var(--color-surface);
+  background-image: linear-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+  background-size: 100% 2rem;
+  line-height: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}

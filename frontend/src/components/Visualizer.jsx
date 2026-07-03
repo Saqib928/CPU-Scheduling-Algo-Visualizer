@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useSimulation } from '../context/SimulationContext';
 import ProcessCard from './ProcessCard';
 
-const Visualizer = () => {
+const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
   const { 
     algorithm, setAlgorithm,
     timeQuantum, setTimeQuantum,
@@ -73,6 +73,9 @@ const Visualizer = () => {
           <button onClick={() => setPlaybackSpeed(s => s === 1 ? 2 : (s === 2 ? 0.5 : 1))} aria-label={`Change Playback Speed. Current speed is ${playbackSpeed}x`} className="flex items-center gap-1 px-4 py-2 bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors active:scale-95">
             <span className="material-symbols-outlined text-xl" aria-hidden="true">speed</span>
             <span className="text-sm font-semibold">{playbackSpeed}x Speed</span>
+          </button>
+          <button onClick={() => setIsDarkMode(!isDarkMode)} aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} className="flex items-center justify-center p-2 bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors active:scale-95">
+            <span className="material-symbols-outlined text-xl" aria-hidden="true">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
           </button>
           <div className="h-6 w-px bg-outline-variant mx-2" aria-hidden="true"></div>
           <button onClick={handleAddProcess} aria-label="Add New Random Process" className="bg-primary px-6 py-2 rounded-lg text-on-primary font-bold hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all">
