@@ -59,12 +59,16 @@ export const SimulationProvider = ({ children }) => {
     setCurrentTick(0);
   };
 
+  const removeProcess = (processId) => {
+    setProcesses(prev => prev.filter(p => p.id !== processId));
+  };
+
   const currentState = timeline[currentTick] || {
     time: 0, readyQueue: [], cpu: null, completed: [], processDetails: {}
   };
 
   const value = {
-    processes, setProcesses,
+    processes, setProcesses, removeProcess,
     algorithm, setAlgorithm,
     timeQuantum, setTimeQuantum,
     playbackSpeed, setPlaybackSpeed,
