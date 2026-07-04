@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSimulation } from '../context/SimulationContext';
 import ProcessCard from './ProcessCard';
 
@@ -12,6 +12,14 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
   } = useSimulation();
 
   const { time, readyQueue, cpu, completed, processDetails } = currentState;
+
+  // Add Process Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalProcessId, setModalProcessId] = useState('');
+  const [modalArrival, setModalArrival] = useState(0);
+  const [modalBurst, setModalBurst] = useState(1);
+  const [modalPriority, setModalPriority] = useState(1);
+  const [randomPreset, setRandomPreset] = useState({ arrivalTime: 0, burstTime: 1, priority: 1 });
 
   // Calculate live stats
   const stats = useMemo(() => {
@@ -32,18 +40,50 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
     return { avgWait, avgTurnaround, throughput };
   }, [completed, processDetails, time]);
 
-  // Handle Add Process
+  // Handle Add Process Trigger
   const handleAddProcess = () => {
-    setProcesses(prev => {
-      const nextId = prev.length > 0 ? Math.max(...prev.map(p => parseInt(p.id.replace('P', '')))) + 1 : 1;
-      const newProcess = {
-        id: `P${nextId}`,
-        arrivalTime: time + 1, // Arrive in the future
-        burstTime: Math.floor(Math.random() * 10) + 1,
-        priority: Math.floor(Math.random() * 5) + 1,
-      };
-      return [...prev, newProcess];
-    });
+    const nextId = processes.length > 0 ? Math.max(...processes.map(p => parseInt(p.id.replace('P', '')))) + 1 : 1;
+    const burstVal = Math.floor(Math.random() * 10) + 1;
+    const priorityVal = Math.floor(Math.random() * 5) + 1;
+    const arrivalVal = time + 1;
+
+    setModalProcessId(`P${nextId}`);
+    setModalArrival(arrivalVal);
+    setModalBurst(burstVal);
+    setModalPriority(priorityVal);
+    setRandomPreset({ arrivalTime: arrivalVal, burstTime: burstVal, priority: priorityVal });
+    setIsModalOpen(true);
+  };
+
+  const handleAddCustom = (e) => {
+    e.preventDefault();
+    if (modalArrival < 0 || modalBurst <= 0 || modalPriority < 1) {
+      alert("Invalid inputs: Burst Time must be >= 1, Arrival Time >= 0, Priority >= 1");
+      return;
+    }
+    setProcesses(prev => [
+      ...prev,
+      {
+        id: modalProcessId,
+        arrivalTime: Number(modalArrival),
+        burstTime: Number(modalBurst),
+        priority: Number(modalPriority)
+      }
+    ]);
+    setIsModalOpen(false);
+  };
+
+  const handleAddRandomPreset = () => {
+    setProcesses(prev => [
+      ...prev,
+      {
+        id: modalProcessId,
+        arrivalTime: Number(randomPreset.arrivalTime),
+        burstTime: Number(randomPreset.burstTime),
+        priority: Number(randomPreset.priority)
+      }
+    ]);
+    setIsModalOpen(false);
   };
 
   // Determine Pool (Not arrived yet but exists in processes list)
@@ -59,6 +99,17 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
           <div className="flex items-center gap-2 bg-primary/5 px-3 py-1 rounded-full border border-primary/20">
             <span className={`w-2 h-2 rounded-full bg-primary ${isPlaying ? 'animate-pulse' : ''}`}></span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Live Simulation (t={time})</span>
+          </div>
+          {/* Active Algorithm Pill Badge */}
+          <div className="flex items-center gap-1.5 bg-secondary/10 px-3 py-1 rounded-full border border-secondary/20 shadow-sm">
+            <span className="material-symbols-outlined text-[14px] text-secondary">analytics</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-secondary">
+              Algo: {algorithm === 'FCFS' ? 'First-Come, First-Served (FCFS)' :
+                      algorithm === 'SJF' ? 'Shortest Job First (SJF)' :
+                      algorithm === 'SRTF' ? 'Shortest Remaining Time First (SRTF)' :
+                      algorithm === 'Priority' ? 'Preemptive Priority' :
+                      algorithm === 'RR' ? `Round Robin (RR, Q=${timeQuantum})` : algorithm}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-sm" role="toolbar" aria-label="Simulation Controls">
@@ -124,14 +175,20 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
         </div>
 
         {/* CENTER ROW: CPU Core */}
-        <div className="flex-1 flex items-center justify-center relative py-12" aria-live="polite">
-          {/* Learning Note */}
-          <div className="absolute top-0 left-4 font-body-sm text-on-surface-variant -rotate-1 bg-surface-container-high p-4 rounded-xl border border-outline-variant max-w-[240px] shadow-sm italic z-20">
-            <div className="flex items-center gap-2 mb-1 text-primary">
+        <div className="flex-1 flex flex-col items-center justify-center relative py-6 gap-6" aria-live="polite">
+          {/* Analysis Status Heading */}
+          <div className="w-full max-w-2xl text-center bg-surface-container-low border border-outline-variant/60 rounded-xl p-4 glass-panel shadow-sm">
+            <div className="flex items-center justify-center gap-2 text-primary mb-1">
               <span className="material-symbols-outlined text-lg" aria-hidden="true">lightbulb</span>
-              <span className="text-xs font-bold uppercase tracking-wider">Analysis</span>
+              <span className="text-xs font-extrabold uppercase tracking-widest">Live Analysis</span>
             </div>
-            {cpu ? `The CPU is currently executing ${cpu} using ${algorithm}.` : `The CPU is idle. Algorithm is ${algorithm}.`}
+            <p className="text-sm font-medium text-on-surface-variant">
+              {cpu ? (
+                <>The CPU is currently executing <span className="font-bold text-on-surface">{cpu}</span> using the <span className="font-bold text-on-surface">{algorithm}</span> scheduling algorithm.</>
+              ) : (
+                <>The CPU is idle. Currently simulated algorithm: <span className="font-bold text-on-surface">{algorithm}</span>.</>
+              )}
+            </p>
           </div>
 
           {/* CPU Core Container */}
@@ -233,6 +290,80 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
           </div>
         </div>
       </aside>
+
+      {/* ADD PROCESS MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-md bg-background/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-surface border border-outline-variant rounded-2xl p-6 w-full max-w-md shadow-2xl glass-panel relative flex flex-col gap-4 text-on-surface animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold text-primary flex items-center gap-2">
+              <span className="material-symbols-outlined">add_circle</span>
+              Add Process {modalProcessId}
+            </h3>
+            <p className="text-xs text-on-surface-variant">
+              A new process will be added. You can edit the values below or continue with the generated random values.
+            </p>
+            <form onSubmit={handleAddCustom} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Arrival Time</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={modalArrival}
+                  onChange={e => setModalArrival(Number(e.target.value))}
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors font-semibold"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Burst Time</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  value={modalBurst}
+                  onChange={e => setModalBurst(Number(e.target.value))}
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors font-semibold"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+                  Priority {algorithm === 'Priority' ? '(Lower number = Higher priority)' : ''}
+                </label>
+                <input 
+                  type="number" 
+                  min="1"
+                  value={modalPriority}
+                  onChange={e => setModalPriority(Number(e.target.value))}
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors font-semibold"
+                  required
+                />
+              </div>
+              <div className="flex gap-2 justify-end mt-4">
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg hover:bg-surface-variant transition-colors border border-transparent text-on-surface-variant"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleAddRandomPreset}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg bg-surface-container-high hover:bg-surface-container-highest transition-colors border border-outline-variant text-on-surface"
+                >
+                  Continue with Random ({randomPreset.arrivalTime}, {randomPreset.burstTime}, {randomPreset.priority})
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 text-sm font-semibold rounded-lg bg-primary text-on-primary hover:shadow-lg hover:shadow-primary/20 transition-all"
+                >
+                  Add Custom
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
