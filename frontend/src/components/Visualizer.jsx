@@ -20,6 +20,7 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
   const [modalBurst, setModalBurst] = useState(1);
   const [modalPriority, setModalPriority] = useState(1);
   const [randomPreset, setRandomPreset] = useState({ arrivalTime: 0, burstTime: 1, priority: 1 });
+  const [isAlgoModalOpen, setIsAlgoModalOpen] = useState(false);
 
   // Calculate live stats
   const stats = useMemo(() => {
@@ -95,22 +96,16 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
       {/* TOP NAVBAR */}
       <header className="fixed top-0 right-0 left-64 z-40 flex justify-between items-center px-lg h-16 border-b border-outline-variant bg-surface-container-lowest/80 backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <span className="text-xl font-bold text-on-surface">OS Lab: Scheduler</span>
-          <div className="flex items-center gap-2 bg-primary/5 px-3 py-1 rounded-full border border-primary/20">
-            <span className={`w-2 h-2 rounded-full bg-primary ${isPlaying ? 'animate-pulse' : ''}`}></span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Live Simulation (t={time})</span>
-          </div>
-          {/* Active Algorithm Pill Badge */}
-          <div className="flex items-center gap-1.5 bg-secondary/10 px-3 py-1 rounded-full border border-secondary/20 shadow-sm">
-            <span className="material-symbols-outlined text-[14px] text-secondary">analytics</span>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-secondary">
-              Algo: {algorithm === 'FCFS' ? 'First-Come, First-Served (FCFS)' :
-                      algorithm === 'SJF' ? 'Shortest Job First (SJF)' :
-                      algorithm === 'SRTF' ? 'Shortest Remaining Time First (SRTF)' :
-                      algorithm === 'Priority' ? 'Preemptive Priority' :
-                      algorithm === 'RR' ? `Round Robin (RR, Q=${timeQuantum})` : algorithm}
-            </span>
-          </div>
+          {/* Active Algorithm Heading */}
+          <button onClick={() => setIsAlgoModalOpen(true)} className="text-2xl font-extrabold text-primary flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95" aria-label="Change Algorithm">
+            <span className="material-symbols-outlined text-3xl">analytics</span>
+            Algo: {algorithm === 'FCFS' ? 'First-Come, First-Served (FCFS)' :
+                    algorithm === 'SJF' ? 'Shortest Job First (SJF)' :
+                    algorithm === 'SRTF' ? 'Shortest Remaining Time First (SRTF)' :
+                    algorithm === 'Priority' ? 'Preemptive Priority' :
+                    algorithm === 'RR' ? `Round Robin (RR, Q=${timeQuantum})` : algorithm}
+            <span className="material-symbols-outlined text-xl ml-1">expand_more</span>
+          </button>
         </div>
         <div className="flex items-center gap-sm" role="toolbar" aria-label="Simulation Controls">
           <button onClick={togglePlay} aria-label={isPlaying ? 'Pause Simulation' : 'Play Simulation'} className="flex items-center gap-1 px-4 py-2 bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors active:scale-95">
@@ -231,61 +226,39 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
         </h2>
         
         {/* Stats Grid */}
-        <div className="space-y-4" aria-live="polite">
-          <div className="bg-surface-container p-lg rounded-xl border border-outline-variant">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">Avg Waiting Time</p>
+        <div className="space-y-3" aria-live="polite">
+          <div className="bg-surface-container p-4 rounded-xl border border-outline-variant">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`w-2 h-2 rounded-full bg-primary ${isPlaying ? 'animate-pulse' : ''}`}></span>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Live Simulation</p>
+            </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-primary">{stats.avgWait}</span>
+              <span className="text-2xl font-bold text-on-surface">t = {time}</span>
               <span className="text-sm font-medium text-on-surface-variant">ms</span>
             </div>
           </div>
-          
-          <div className="bg-surface-container p-lg rounded-xl border border-outline-variant">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">Avg Turnaround Time</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-tertiary">{stats.avgTurnaround}</span>
-              <span className="text-sm font-medium text-on-surface-variant">ms</span>
-            </div>
-          </div>
-          
-          <div className="bg-surface-container p-lg rounded-xl border border-outline-variant">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">Throughput</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-secondary">{stats.throughput}</span>
-              <span className="text-sm font-medium text-on-surface-variant">proc/ms</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Scheduling Strategy Configuration */}
-        <div className="mt-auto">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-3">Scheduling Strategy</h3>
-          <div className="p-lg rounded-xl bg-primary/5 border border-primary/20">
-            <div className="flex flex-col gap-4">
-              <select 
-                value={algorithm}
-                onChange={(e) => setAlgorithm(e.target.value)}
-                className="bg-surface-container text-on-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-primary text-sm font-bold w-full"
-              >
-                <option value="FCFS">First Come First Serve</option>
-                <option value="SJF">Shortest Job First</option>
-                <option value="SRTF">Shortest Remaining Time</option>
-                <option value="Priority">Priority (Preemptive)</option>
-                <option value="RR">Round Robin</option>
-              </select>
-              
-              {algorithm === 'RR' && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-on-surface-variant font-medium">Time Quantum</span>
-                  <input 
-                    type="number" 
-                    value={timeQuantum}
-                    onChange={e => setTimeQuantum(Number(e.target.value))}
-                    className="w-16 bg-surface-container border border-outline-variant rounded px-2 py-1 text-on-surface text-right"
-                    min="1"
-                  />
-                </div>
-              )}
+          <div className="bg-surface-container p-4 rounded-xl border border-outline-variant">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Avg Waiting Time</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-primary">{stats.avgWait}</span>
+              <span className="text-sm font-medium text-on-surface-variant">ms</span>
+            </div>
+          </div>
+          
+          <div className="bg-surface-container p-4 rounded-xl border border-outline-variant">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Avg Turnaround Time</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-tertiary">{stats.avgTurnaround}</span>
+              <span className="text-sm font-medium text-on-surface-variant">ms</span>
+            </div>
+          </div>
+          
+          <div className="bg-surface-container p-4 rounded-xl border border-outline-variant">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Throughput</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-secondary">{stats.throughput}</span>
+              <span className="text-sm font-medium text-on-surface-variant">proc/ms</span>
             </div>
           </div>
         </div>
@@ -361,6 +334,56 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ALGO CONFIG MODAL */}
+      {isAlgoModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-md bg-background/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-surface border border-outline-variant rounded-2xl p-6 w-full max-w-sm shadow-2xl glass-panel relative flex flex-col gap-4 text-on-surface animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold text-primary flex items-center gap-2">
+              <span className="material-symbols-outlined">settings</span>
+              Scheduling Strategy
+            </h3>
+            <p className="text-xs text-on-surface-variant">
+              Select the CPU scheduling algorithm you want to simulate.
+            </p>
+            <div className="flex flex-col gap-4 mt-2">
+              <select 
+                value={algorithm}
+                onChange={(e) => setAlgorithm(e.target.value)}
+                className="bg-surface-container text-on-surface px-3 py-3 rounded-lg border border-outline-variant focus:outline-none focus:border-primary text-sm font-bold w-full shadow-sm"
+              >
+                <option value="FCFS">First Come First Serve</option>
+                <option value="SJF">Shortest Job First</option>
+                <option value="SRTF">Shortest Remaining Time</option>
+                <option value="Priority">Priority (Preemptive)</option>
+                <option value="RR">Round Robin</option>
+              </select>
+              
+              {algorithm === 'RR' && (
+                <div className="flex justify-between items-center text-sm p-3 bg-surface-container rounded-lg border border-outline-variant">
+                  <span className="text-on-surface-variant font-bold uppercase tracking-wider text-xs">Time Quantum</span>
+                  <input 
+                    type="number" 
+                    value={timeQuantum}
+                    onChange={e => setTimeQuantum(Number(e.target.value))}
+                    className="w-16 bg-background border border-outline-variant rounded px-2 py-1 text-on-surface text-right font-bold focus:outline-none focus:border-primary"
+                    min="1"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button 
+                type="button"
+                onClick={() => setIsAlgoModalOpen(false)}
+                className="px-6 py-2 text-sm font-bold rounded-lg bg-primary text-on-primary hover:shadow-lg hover:shadow-primary/20 transition-all"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

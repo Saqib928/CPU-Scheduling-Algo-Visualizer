@@ -43,7 +43,7 @@ function App() {
             <button 
               onClick={() => setActiveTab('dashboard')}
               aria-current={activeTab === 'dashboard' ? 'page' : undefined} 
-              className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'text-primary font-bold border-r-4 border-primary bg-primary/5' : 'text-on-surface-variant font-medium hover:bg-surface-variant/30'}`}
+              className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'text-primary font-bold border border-primary bg-primary/5' : 'text-on-surface-variant font-medium border border-outline-variant hover:border-primary hover:shadow-[0_0_10px_rgba(var(--color-primary),0.3)]'}`}
             >
               <span className="material-symbols-outlined" aria-hidden="true">dashboard</span>
               <span>Dashboard</span>
@@ -51,7 +51,7 @@ function App() {
             <button 
               onClick={() => setActiveTab('notebook')}
               aria-current={activeTab === 'notebook' ? 'page' : undefined} 
-              className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'notebook' ? 'text-primary font-bold border-r-4 border-primary bg-primary/5' : 'text-on-surface-variant font-medium hover:bg-surface-variant/30'}`}
+              className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'notebook' ? 'text-primary font-bold border border-primary bg-primary/5' : 'text-on-surface-variant font-medium border border-outline-variant hover:border-primary hover:shadow-[0_0_10px_rgba(var(--color-primary),0.3)]'}`}
             >
               <span className="material-symbols-outlined" aria-hidden="true">menu_book</span>
               <span>Learning Notebook</span>
@@ -59,7 +59,7 @@ function App() {
             <button 
               onClick={() => setActiveTab('quiz')}
               aria-current={activeTab === 'quiz' ? 'page' : undefined} 
-              className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'quiz' ? 'text-primary font-bold border-r-4 border-primary bg-primary/5' : 'text-on-surface-variant font-medium hover:bg-surface-variant/30'}`}
+              className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'quiz' ? 'text-primary font-bold border border-primary bg-primary/5' : 'text-on-surface-variant font-medium border border-outline-variant hover:border-primary hover:shadow-[0_0_10px_rgba(var(--color-primary),0.3)]'}`}
             >
               <span className="material-symbols-outlined" aria-hidden="true">quiz</span>
               <span>Quiz Arena</span>
