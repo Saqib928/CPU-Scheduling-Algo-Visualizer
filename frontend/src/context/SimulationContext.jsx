@@ -63,12 +63,22 @@ export const SimulationProvider = ({ children }) => {
     setProcesses(prev => prev.filter(p => p.id !== processId));
   };
 
+  const reorderProcesses = (newOrderIds) => {
+    // newOrderIds is an array of process IDs.
+    // Reconstruct processes array assigning arrivalTime = index
+    const updated = newOrderIds.map((id, index) => {
+      const p = processes.find(proc => proc.id === id);
+      return { ...p, arrivalTime: index };
+    });
+    setProcesses(updated);
+  };
+
   const currentState = timeline[currentTick] || {
     time: 0, readyQueue: [], cpu: null, completed: [], processDetails: {}
   };
 
   const value = {
-    processes, setProcesses, removeProcess,
+    processes, setProcesses, removeProcess, reorderProcesses,
     algorithm, setAlgorithm,
     timeQuantum, setTimeQuantum,
     playbackSpeed, setPlaybackSpeed,

@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useSimulation } from '../context/SimulationContext';
 import ProcessCard from './ProcessCard';
+import { AnimatePresence, Reorder } from 'framer-motion';
+import ComparisonModal from './ComparisonModal';
 
 const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
   const { 
@@ -8,10 +10,12 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
     timeQuantum, setTimeQuantum,
     currentState, isPlaying, togglePlay, reset,
     playbackSpeed, setPlaybackSpeed,
-    processes, setProcesses, removeProcess
+    processes, setProcesses, removeProcess, reorderProcesses,
+    currentTick, timeline
   } = useSimulation();
 
   const { time, readyQueue, cpu, completed, processDetails } = currentState;
+  const isSimulationComplete = processes.length > 0 && completed.length === processes.length && currentTick > 0 && currentTick >= timeline.length - 1;
 
   // Add Process Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,6 +25,7 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
   const [modalPriority, setModalPriority] = useState(1);
   const [randomPreset, setRandomPreset] = useState({ arrivalTime: 0, burstTime: 1, priority: 1 });
   const [isAlgoModalOpen, setIsAlgoModalOpen] = useState(false);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
   // Calculate live stats
   const stats = useMemo(() => {
@@ -124,6 +129,10 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
             <span className="material-symbols-outlined text-xl" aria-hidden="true">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
           </button>
           <div className="h-6 w-px bg-outline-variant mx-2" aria-hidden="true"></div>
+          <button onClick={() => setIsCompareModalOpen(true)} aria-label="Compare Algorithms" className="flex items-center gap-1 px-4 py-2 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors active:scale-95 font-bold text-sm">
+            <span className="material-symbols-outlined text-xl" aria-hidden="true">stacked_bar_chart</span>
+            Compare
+          </button>
           <button onClick={handleAddProcess} aria-label="Add New Random Process" className="bg-primary px-6 py-2 rounded-lg text-on-primary font-bold hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all">
             Add Process
           </button>
@@ -131,25 +140,91 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
       </header>
 
       {/* VISUALIZER STAGE */}
-      <section className="flex-1 p-lg pt-24 flex flex-col gap-lg overflow-y-auto">
+      <section className="flex-1 p-4 pt-24 flex flex-col gap-4 overflow-y-auto">
         
-        {/* TOP ROW: Process Pool & Ready Queue */}
+        {/* COMPLETED PROCESSES ROW (Appears when complete) */}
+        {isSimulationComplete && (
+          <div className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-4 relative glass-panel flex flex-col shrink-0 min-h-[120px] animate-in slide-in-from-top-4 fade-in duration-500">
+            <span className="absolute -top-3 left-6 bg-background px-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Completed Processes</span>
+            <div className="flex gap-4 overflow-x-auto pt-2 pb-2 items-center h-full custom-scrollbar">
+              <AnimatePresence>
+                {completed.map(id => (
+                  <ProcessCard key={id} process={processDetails[id]} variant="COMPLETED" />
+                ))}
+              </AnimatePresence>
+            </div>
+            
+            {/* Timeline Ruler */}
+            <div className="bg-surface-container border border-outline-variant rounded-xl p-4 overflow-hidden relative mt-4">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-4">Execution Timeline</h3>
+              <div className="relative h-20 w-full flex overflow-x-auto pb-4 custom-scrollbar">
+                {[...Array(time + 1)].map((_, i) => (
+                  <div key={i} className="flex flex-col items-center justify-end relative min-w-[3.5rem]">
+                    {/* Mark for process completion */}
+                    {completed.filter(id => processDetails[id].completionTime === i).map(id => (
+                      <div key={id} className="absolute bottom-10 text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded whitespace-nowrap border border-primary/20 z-10 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
+                        {id} execution complete
+                      </div>
+                    ))}
+                    <div className="h-3 w-px bg-outline-variant mb-1"></div>
+                    <span className="text-[10px] font-bold text-on-surface-variant">{i}</span>
+                  </div>
+                ))}
+                {/* Horizontal line */}
+                <div className="absolute bottom-4 left-0 right-0 h-px bg-outline-variant"></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MIDDLE ROW: Process Pool & Ready Queue */}
         <div className="grid grid-cols-12 gap-lg min-h-[160px]">
           {/* Process Pool */}
           <div className="col-span-3 bg-surface-container-low border border-outline-variant rounded-xl p-md relative glass-panel" aria-labelledby="pool-heading">
-            <span id="pool-heading" className="absolute -top-3 left-4 bg-background px-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Process Pool</span>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {poolProcesses.map(p => (
-                <div key={p.id} className="w-12 h-16 bg-surface-container-high border border-outline-variant rounded-lg flex flex-col items-center justify-center relative group">
-                  <span className="text-xs font-bold text-on-surface">{p.id}</span>
-                  <span className="text-[10px] text-on-surface-variant font-medium">B: {p.burstTime}</span>
-                  <button onClick={() => removeProcess(p.id)} aria-label={`Delete process ${p.id}`} className="absolute -top-2 -right-2 bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="material-symbols-outlined text-[12px]">close</span>
-                  </button>
-                </div>
-              ))}
-              {poolProcesses.length === 0 && <span className="text-xs text-on-surface-variant italic">Empty</span>}
-            </div>
+            <span id="pool-heading" className="absolute -top-3 left-4 bg-background px-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-1">
+              Process Pool {time === 0 && <span className="material-symbols-outlined text-[10px]">drag_indicator</span>}
+            </span>
+            
+            {time === 0 && !isPlaying ? (
+              <Reorder.Group 
+                axis="x" 
+                values={poolProcesses} 
+                onReorder={(newPoolOrder) => {
+                  const nonPoolIds = processes.map(p => p.id).filter(id => !newPoolOrder.find(np => np.id === id));
+                  const newPoolIds = newPoolOrder.map(np => np.id);
+                  reorderProcesses([...nonPoolIds, ...newPoolIds]);
+                }}
+                className="flex flex-wrap gap-2 mt-2"
+              >
+                {poolProcesses.map(p => (
+                  <Reorder.Item 
+                    key={p.id} 
+                    value={p} 
+                    className="w-12 h-16 bg-surface-container-high border border-outline-variant rounded-lg flex flex-col items-center justify-center relative group cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors shadow-sm"
+                  >
+                    <span className="text-xs font-bold text-on-surface">{p.id}</span>
+                    <span className="text-[10px] text-on-surface-variant font-medium">B: {p.burstTime}</span>
+                    <button onPointerDown={(e) => e.stopPropagation()} onClick={() => removeProcess(p.id)} aria-label={`Delete process ${p.id}`} className="absolute -top-2 -right-2 bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </Reorder.Item>
+                ))}
+                {poolProcesses.length === 0 && <span className="text-xs text-on-surface-variant italic mt-2">Empty</span>}
+              </Reorder.Group>
+            ) : (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {poolProcesses.map(p => (
+                  <div key={p.id} className="w-12 h-16 bg-surface-container-high border border-outline-variant rounded-lg flex flex-col items-center justify-center relative group">
+                    <span className="text-xs font-bold text-on-surface">{p.id}</span>
+                    <span className="text-[10px] text-on-surface-variant font-medium">B: {p.burstTime}</span>
+                    <button onClick={() => removeProcess(p.id)} aria-label={`Delete process ${p.id}`} className="absolute -top-2 -right-2 bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </div>
+                ))}
+                {poolProcesses.length === 0 && <span className="text-xs text-on-surface-variant italic mt-2">Empty</span>}
+              </div>
+            )}
           </div>
           
           {/* Ready Queue */}
@@ -206,16 +281,7 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
           </div>
         </div>
 
-        {/* BOTTOM ROW: Completed List / Info */}
-        <div className="h-48 bg-surface-container-low border border-outline-variant rounded-2xl p-lg relative flex flex-col glass-panel shrink-0">
-          <span className="absolute -top-3 left-6 bg-background px-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Completed Processes</span>
-          <div className="flex-1 flex gap-4 overflow-x-auto pt-2">
-            {completed.map(id => (
-              <ProcessCard key={id} process={processDetails[id]} variant="COMPLETED" />
-            ))}
-            {completed.length === 0 && <span className="text-xs text-on-surface-variant italic mt-2">No processes completed yet.</span>}
-          </div>
-        </div>
+
       </section>
 
       {/* RIGHT SIDEBAR: Live Stats & Strategy */}
@@ -387,6 +453,15 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
           </div>
         </div>
       )}
+
+      {/* COMPARISON MODAL */}
+      {isCompareModalOpen && (
+        <ComparisonModal 
+          processes={processes}
+          onClose={() => setIsCompareModalOpen(false)}
+        />
+      )}
+
     </div>
   );
 };

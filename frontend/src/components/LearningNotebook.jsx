@@ -22,7 +22,7 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
       {/* TOP HEADER */}
       <header className="fixed top-0 right-0 left-64 z-40 flex justify-between items-center px-lg h-16 border-b border-outline-variant bg-surface-container-lowest/80 backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <span className="text-xl font-bold text-on-surface">Learning Notebook</span>
+          <span className="text-xl font-bold text-on-surface whitespace-nowrap">Learning Notebook</span>
           <span className="text-xs bg-secondary/15 text-secondary border border-secondary/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">CPU Scheduling</span>
         </div>
         <div className="flex items-center gap-sm">
