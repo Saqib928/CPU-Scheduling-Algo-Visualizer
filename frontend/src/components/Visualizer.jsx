@@ -46,6 +46,26 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
     return { avgWait, avgTurnaround, throughput };
   }, [completed, processDetails, time]);
 
+  // Calculate Gantt chart blocks
+  const ganttBlocks = useMemo(() => {
+    if (!timeline || timeline.length === 0) return [];
+    const blocks = [];
+    let currentBlock = null;
+
+    for (let t = 0; t < timeline.length; t++) {
+      const pId = timeline[t].cpu;
+      if (currentBlock && currentBlock.id === pId) {
+        currentBlock.end = t + 1;
+      } else {
+        if (currentBlock) blocks.push(currentBlock);
+        if (pId) currentBlock = { id: pId, start: t, end: t + 1 };
+        else currentBlock = null;
+      }
+    }
+    if (currentBlock) blocks.push(currentBlock);
+    return blocks;
+  }, [timeline]);
+
   // Handle Add Process Trigger
   const handleAddProcess = () => {
     const nextId = processes.length > 0 ? Math.max(...processes.map(p => parseInt(p.id.replace('P', '')))) + 1 : 1;
@@ -99,41 +119,55 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
     <div className="flex w-full h-full relative">
       
       {/* TOP NAVBAR */}
-      <header className="fixed top-0 right-0 left-64 z-40 flex justify-between items-center px-lg h-16 border-b border-outline-variant bg-surface-container-lowest/80 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
+      <header className="fixed top-0 right-0 left-64 z-40 flex justify-between items-center px-6 h-16 border-b border-outline-variant bg-surface/90 backdrop-blur-xl">
+        <div className="flex items-center min-w-0 mr-4">
           {/* Active Algorithm Heading */}
-          <button onClick={() => setIsAlgoModalOpen(true)} className="text-2xl font-extrabold text-primary flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95" aria-label="Change Algorithm">
-            <span className="material-symbols-outlined text-3xl">analytics</span>
-            Algo: {algorithm === 'FCFS' ? 'First-Come, First-Served (FCFS)' :
-                    algorithm === 'SJF' ? 'Shortest Job First (SJF)' :
-                    algorithm === 'SRTF' ? 'Shortest Remaining Time First (SRTF)' :
-                    algorithm === 'Priority' ? 'Preemptive Priority' :
-                    algorithm === 'RR' ? `Round Robin (RR, Q=${timeQuantum})` : algorithm}
-            <span className="material-symbols-outlined text-xl ml-1">expand_more</span>
+          <button 
+            onClick={() => setIsAlgoModalOpen(true)} 
+            className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-surface-container transition-colors active:scale-95 text-left min-w-0 group" 
+            aria-label="Change Algorithm"
+          >
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
+              <span className="material-symbols-outlined text-[20px]">account_tree</span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant leading-tight">Algorithm</span>
+              <span className="text-sm font-extrabold text-on-surface truncate leading-tight mt-0.5">
+                {algorithm === 'FCFS' ? 'First-Come, First-Served (FCFS)' :
+                 algorithm === 'SJF' ? 'Shortest Job First (SJF)' :
+                 algorithm === 'SRTF' ? 'Shortest Remaining Time First (SRTF)' :
+                 algorithm === 'Priority' ? 'Preemptive Priority' :
+                 algorithm === 'RR' ? `Round Robin (RR, Q=${timeQuantum})` : algorithm}
+              </span>
+            </div>
+            <span className="material-symbols-outlined text-on-surface-variant shrink-0 text-sm ml-1 group-hover:text-on-surface transition-colors">expand_more</span>
           </button>
         </div>
-        <div className="flex items-center gap-sm" role="toolbar" aria-label="Simulation Controls">
-          <button onClick={togglePlay} aria-label={isPlaying ? 'Pause Simulation' : 'Play Simulation'} className="flex items-center gap-1 px-4 py-2 bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors active:scale-95">
-            <span className="material-symbols-outlined text-xl" aria-hidden="true">{isPlaying ? 'pause' : 'play_arrow'}</span>
-            <span className="text-sm font-semibold">{isPlaying ? 'Pause' : 'Play'}</span>
+        
+        <div className="flex items-center gap-2 shrink-0" role="toolbar" aria-label="Simulation Controls">
+          <button onClick={togglePlay} aria-label={isPlaying ? 'Pause Simulation' : 'Play Simulation'} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-high rounded-lg text-on-surface hover:bg-surface-container-highest transition-colors active:scale-95 border border-transparent hover:border-outline-variant">
+            <span className="material-symbols-outlined text-lg text-primary" aria-hidden="true">{isPlaying ? 'pause' : 'play_arrow'}</span>
+            <span className="text-xs font-bold">{isPlaying ? 'Pause' : 'Play'}</span>
           </button>
-          <button onClick={reset} aria-label="Reset Simulation" className="flex items-center gap-1 px-4 py-2 bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors active:scale-95">
-            <span className="material-symbols-outlined text-xl" aria-hidden="true">refresh</span>
-            <span className="text-sm font-semibold">Reset</span>
+          <button onClick={reset} aria-label="Reset Simulation" className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-high rounded-lg text-on-surface hover:bg-surface-container-highest transition-colors active:scale-95 border border-transparent hover:border-outline-variant">
+            <span className="material-symbols-outlined text-lg" aria-hidden="true">refresh</span>
+            <span className="text-xs font-bold">Reset</span>
           </button>
-          <button onClick={() => setPlaybackSpeed(s => s === 1 ? 2 : (s === 2 ? 0.5 : 1))} aria-label={`Change Playback Speed. Current speed is ${playbackSpeed}x`} className="flex items-center gap-1 px-4 py-2 bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors active:scale-95">
-            <span className="material-symbols-outlined text-xl" aria-hidden="true">speed</span>
-            <span className="text-sm font-semibold">{playbackSpeed}x Speed</span>
+          <button onClick={() => setPlaybackSpeed(s => s === 1 ? 2 : (s === 2 ? 0.5 : 1))} aria-label={`Change Playback Speed. Current speed is ${playbackSpeed}x`} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-high rounded-lg text-on-surface hover:bg-surface-container-highest transition-colors active:scale-95 border border-transparent hover:border-outline-variant min-w-[5.5rem] justify-center">
+            <span className="material-symbols-outlined text-lg" aria-hidden="true">speed</span>
+            <span className="text-xs font-bold">{playbackSpeed}x</span>
           </button>
-          <button onClick={() => setIsDarkMode(!isDarkMode)} aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} className="flex items-center justify-center p-2 bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors active:scale-95">
-            <span className="material-symbols-outlined text-xl" aria-hidden="true">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
+          <div className="h-6 w-px bg-outline-variant mx-1" aria-hidden="true"></div>
+          <button onClick={() => setIsDarkMode(!isDarkMode)} aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} className="flex items-center justify-center p-1.5 bg-surface-container-high rounded-lg text-on-surface hover:bg-surface-container-highest transition-colors active:scale-95 border border-transparent hover:border-outline-variant">
+            <span className="material-symbols-outlined text-lg" aria-hidden="true">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
           </button>
-          <div className="h-6 w-px bg-outline-variant mx-2" aria-hidden="true"></div>
-          <button onClick={() => setIsCompareModalOpen(true)} aria-label="Compare Algorithms" className="flex items-center gap-1 px-4 py-2 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors active:scale-95 font-bold text-sm">
-            <span className="material-symbols-outlined text-xl" aria-hidden="true">stacked_bar_chart</span>
+          <div className="h-6 w-px bg-outline-variant mx-1" aria-hidden="true"></div>
+          <button onClick={() => setIsCompareModalOpen(true)} aria-label="Compare Algorithms" className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors active:scale-95 font-bold text-xs">
+            <span className="material-symbols-outlined text-lg" aria-hidden="true">stacked_bar_chart</span>
             Compare
           </button>
-          <button onClick={handleAddProcess} aria-label="Add New Random Process" className="bg-primary px-6 py-2 rounded-lg text-on-primary font-bold hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all">
+          <button onClick={handleAddProcess} aria-label="Add New Random Process" className="flex items-center gap-1.5 bg-primary px-4 py-1.5 rounded-lg text-on-primary font-bold hover:shadow-md hover:shadow-primary/20 active:scale-95 transition-all text-xs ml-1">
+            <span className="material-symbols-outlined text-sm">add</span>
             Add Process
           </button>
         </div>
@@ -142,36 +176,100 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
       {/* VISUALIZER STAGE */}
       <section className="flex-1 p-4 pt-24 flex flex-col gap-4 overflow-y-auto">
         
-        {/* COMPLETED PROCESSES ROW (Appears when complete) */}
+        {/* COMPLETED PROCESSES & GANTT CHART (Appears when complete) */}
         {isSimulationComplete && (
-          <div className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-4 relative glass-panel flex flex-col shrink-0 min-h-[120px] animate-in slide-in-from-top-4 fade-in duration-500">
-            <span className="absolute -top-3 left-6 bg-background px-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Completed Processes</span>
-            <div className="flex gap-4 overflow-x-auto pt-2 pb-2 items-center h-full custom-scrollbar">
-              <AnimatePresence>
-                {completed.map(id => (
-                  <ProcessCard key={id} process={processDetails[id]} variant="COMPLETED" />
-                ))}
-              </AnimatePresence>
-            </div>
+          <div className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-6 relative glass-panel flex flex-col shrink-0 animate-in slide-in-from-top-4 fade-in duration-500 gap-6">
+            <span className="absolute -top-3 left-6 bg-background px-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Simulation Complete</span>
             
-            {/* Timeline Ruler */}
-            <div className="bg-surface-container border border-outline-variant rounded-xl p-4 overflow-hidden relative mt-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-4">Execution Timeline</h3>
-              <div className="relative h-20 w-full flex overflow-x-auto pb-4 custom-scrollbar">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                <span className="material-symbols-outlined">analytics</span>
+                Final Analysis
+              </h3>
+              <button 
+                onClick={reset} 
+                className="px-4 py-2 bg-primary text-on-primary font-bold rounded-lg hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all text-sm flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">refresh</span>
+                New Simulation
+              </button>
+            </div>
+
+            {/* Data Table */}
+            <div className="overflow-x-auto border border-outline-variant rounded-xl bg-surface">
+              <table className="w-full text-sm text-left text-on-surface">
+                <thead className="text-xs uppercase bg-surface-container-high text-on-surface-variant border-b border-outline-variant">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">Process</th>
+                    <th className="px-4 py-3 font-bold">Burst Time</th>
+                    <th className="px-4 py-3 font-bold">Priority</th>
+                    <th className="px-4 py-3 font-bold">Waiting Time</th>
+                    <th className="px-4 py-3 font-bold">Turnaround Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completed.map(id => {
+                    const p = processDetails[id];
+                    return (
+                      <tr key={id} className="border-b border-outline-variant/50 last:border-0 hover:bg-surface-variant/20 transition-colors">
+                        <td className="px-4 py-3 font-extrabold text-primary">{p.id}</td>
+                        <td className="px-4 py-3 font-medium">{p.burstTime}</td>
+                        <td className="px-4 py-3 font-medium">{p.priority}</td>
+                        <td className="px-4 py-3 font-bold">{p.waitingTime} ms</td>
+                        <td className="px-4 py-3 font-bold text-tertiary">{p.turnaroundTime} ms</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Gantt Chart Ruler */}
+            <div className="bg-surface-container border border-outline-variant rounded-xl p-4 overflow-hidden relative">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-4">Gantt Chart (Execution Timeline)</h4>
+              <div className="relative h-24 w-full flex overflow-x-auto pb-6 custom-scrollbar">
+                
+                {/* Time Markers */}
                 {[...Array(time + 1)].map((_, i) => (
-                  <div key={i} className="flex flex-col items-center justify-end relative min-w-[3.5rem]">
-                    {/* Mark for process completion */}
-                    {completed.filter(id => processDetails[id].completionTime === i).map(id => (
-                      <div key={id} className="absolute bottom-10 text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded whitespace-nowrap border border-primary/20 z-10 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
-                        {id} execution complete
-                      </div>
-                    ))}
-                    <div className="h-3 w-px bg-outline-variant mb-1"></div>
-                    <span className="text-[10px] font-bold text-on-surface-variant">{i}</span>
+                  <div key={`tick-${i}`} className="flex flex-col items-center justify-end relative min-w-[3.5rem] h-full pointer-events-none">
+                    <div className="h-full w-px bg-outline-variant/30 absolute top-0"></div>
+                    <div className="h-2 w-px bg-outline-variant mb-1 absolute bottom-4"></div>
+                    <span className="text-[10px] font-bold text-on-surface-variant absolute bottom-0">{i}</span>
                   </div>
                 ))}
-                {/* Horizontal line */}
-                <div className="absolute bottom-4 left-0 right-0 h-px bg-outline-variant"></div>
+                
+                {/* Gantt Blocks */}
+                <div className="absolute top-0 left-0 h-10 flex">
+                  {ganttBlocks.map((block, idx) => {
+                    const p = processDetails[block.id];
+                    const colorClasses = [
+                      'bg-process-p1 text-process-p1',
+                      'bg-process-p2 text-process-p2',
+                      'bg-process-p3 text-process-p3',
+                      'bg-process-p4 text-process-p4',
+                      'bg-process-p5 text-process-p5'
+                    ];
+                    const colorClass = colorClasses[(p?.priority || 1) - 1] || colorClasses[0];
+                    const bgClass = colorClass.split(' ')[0];
+                    const borderClass = bgClass.replace('bg-', 'border-');
+
+                    return (
+                      <div 
+                        key={`${block.id}-${idx}`}
+                        className={`absolute top-2 h-10 ${bgClass}/20 border ${borderClass} rounded-md flex flex-col items-center justify-center overflow-hidden shadow-sm hover:brightness-110 transition-all backdrop-blur-sm z-10`}
+                        style={{ 
+                          left: `calc(${block.start * 3.5}rem + 1.75rem)`, 
+                          width: `${(block.end - block.start) * 3.5}rem`,
+                        }}
+                      >
+                        <span className="text-xs font-bold text-on-surface">{block.id}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Horizontal Baseline */}
+                <div className="absolute bottom-6 left-0 right-0 h-px bg-outline-variant"></div>
               </div>
             </div>
           </div>
@@ -271,8 +369,11 @@ const Visualizer = ({ isDarkMode, setIsDarkMode }) => {
             {cpu ? (
               <ProcessCard process={processDetails[cpu]} variant="EXECUTING" />
             ) : (
-              <div className="w-56 h-36 border-2 border-dashed border-outline-variant rounded-2xl flex items-center justify-center z-10 text-outline-variant font-bold">
-                WAITING FOR PROCESS
+              <div className="w-56 h-36 border-2 border-dashed border-outline-variant rounded-2xl flex items-center justify-center z-10 text-outline-variant font-bold bg-surface-container/20 backdrop-blur-md shadow-inner">
+                <div className="flex flex-col items-center gap-2">
+                  <span className="material-symbols-outlined text-4xl opacity-40 animate-pulse">memory</span>
+                  <span className="tracking-widest opacity-80 text-sm">IDLE</span>
+                </div>
               </div>
             )}
 

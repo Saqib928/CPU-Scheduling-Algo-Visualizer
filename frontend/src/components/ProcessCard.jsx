@@ -78,27 +78,7 @@ const ProcessCard = ({ process, variant, onDelete }) => {
     );
   }
 
-  if (variant === 'COMPLETED') {
-    return (
-      <motion.div
-        layout
-        layoutId={`process-${process.id}`}
-        initial={{ opacity: 0, scale: 0.8, x: -20 }}
-        animate={{ opacity: 1, scale: 1, x: 0 }}
-        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className="w-32 h-20 bg-primary/10 border-l-2 border-primary flex flex-col items-center justify-center relative group shrink-0 rounded-r-lg p-2 shadow-sm"
-      >
-        <span className="font-bold text-on-surface">{process.id}</span>
-        <div className="flex gap-2 text-[10px] text-on-surface-variant font-medium">
-          <span>BT: {process.burstTime}</span>
-          <span>Pri: {process.priority}</span>
-        </div>
-        <div className="absolute -top-12 bg-on-surface text-surface px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg z-20">
-          Wait: {process.waitingTime}ms | Turn: {process.turnaroundTime}ms
-        </div>
-      </motion.div>
-    );
-  }
+
 
   return null;
 };
