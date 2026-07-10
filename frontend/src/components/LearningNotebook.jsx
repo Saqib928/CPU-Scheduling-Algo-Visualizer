@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const notebookPages = [
   { id: 'intro', title: 'The Ready Queue vs CPU' },
@@ -14,6 +15,7 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
   const [selectedAlgo, setSelectedAlgo] = useState('FCFS');
   const [simulationStep, setSimulationStep] = useState(0); 
   const [currentPage, setCurrentPage] = useState(0);
+  const [direction, setDirection] = useState(1);
   const progress = Math.round(((currentPage + 1) / notebookPages.length) * 100);
 
   const runSimulation = (algo) => {
@@ -29,20 +31,26 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
   };
 
   const nextPage = () => {
-    if (currentPage < notebookPages.length - 1) setCurrentPage(currentPage + 1);
+    if (currentPage < notebookPages.length - 1) {
+      setDirection(1);
+      setCurrentPage(currentPage + 1);
+    }
   };
 
   const prevPage = () => {
-    if (currentPage > 0) setCurrentPage(currentPage - 1);
+    if (currentPage > 0) {
+      setDirection(-1);
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const renderIntroPage = () => (
-    <div className="pl-8 pb-12 animate-fade-in">
+    <div className="pl-8 pb-12">
       <h2 className="font-handwritten-title text-4xl text-primary font-bold mb-6 rotate-[-1deg]">
-        The Ready Queue vs CPU
+        Welcome to OS Scheduling! 🎓
       </h2>
       <p className="font-handwritten text-lg text-on-surface-variant mb-8 leading-loose max-w-xl">
-        Imagine a line at a coffee shop. The <span className="underline decoration-secondary decoration-2 font-bold">Ready Queue</span> is the line waiting to order, and the <span className="underline decoration-primary decoration-2 font-bold">CPU</span> is the barista processing orders one by one.
+        Class, think of the CPU as a single worker and the <span className="underline decoration-secondary decoration-2 font-bold">Ready Queue</span> as the line of tasks (processes) waiting to be done. Scheduling is simply how the Operating System decides <em>who goes next</em>. 
       </p>
       <div className="flex items-center justify-center gap-8 bg-surface-container-lowest/50 border border-outline-variant rounded-2xl p-8 max-w-xl mb-8 relative">
         <div className="flex flex-col items-center gap-1.5">
@@ -63,163 +71,138 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
         </div>
       </div>
       <p className="font-handwritten text-on-surface-variant max-w-xl mb-8 text-base">
-        "The Execution Phase" starts when the OS scheduler selects a process from the queue and sends it to the CPU. But HOW does it choose? That's what scheduling algorithms are for!
+        In exams and interviews, you'll be judged on three key metrics:<br/>
+        <strong>1. Turnaround Time:</strong> Total time from arrival to completion.<br/>
+        <strong>2. Waiting Time:</strong> Total time spent sitting in the Ready Queue.<br/>
+        <strong>3. Throughput:</strong> How many tasks get done per time unit.
       </p>
       <div className="my-8 max-w-md bg-sky-200 text-sky-950 p-4 rounded-lg shadow-sm font-handwritten text-sm rotate-[-1deg] border border-sky-300 transform transition-transform hover:rotate-0">
-        <span className="font-bold uppercase tracking-wider block mb-1 text-[10px] text-sky-800">Concept Tip</span>
-        Scheduling is all about balancing fairness, throughput, and responsiveness.
+        <span className="font-bold uppercase tracking-wider block mb-1 text-[10px] text-sky-800">Professor's Tip</span>
+        Always ask yourself: Is the algorithm Preemptive (can it pause a running task?) or Non-Preemptive (does a task run until it finishes?). This is a huge exam trap!
       </div>
     </div>
   );
 
   const renderFCFSPage = () => (
-    <div className="pl-8 pb-12 animate-fade-in font-handwritten">
+    <div className="pl-8 pb-12 font-handwritten">
       <h2 className="font-handwritten-title text-4xl text-primary font-bold mb-6 rotate-[-1deg]">
         1. First Come, First Served (FCFS)
       </h2>
       <div className="space-y-6 text-on-surface-variant text-lg pr-4">
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 What is it?</h3>
-          <p>FCFS is the simplest scheduling algorithm. The CPU executes processes in the exact order they arrive in the ready queue.</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 The Basics</h3>
+          <p>FCFS is the simplest scheduling algorithm. Processes are executed exactly in the order they arrive. It uses a strict FIFO (First-In-First-Out) queue.</p>
         </div>
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">⚙️ How it works</h3>
-          <p>It uses a strict FIFO (First-In-First-Out) queue. It is <strong>Non-Preemptive</strong>, meaning once a process gets the CPU, it cannot be interrupted until it finishes its burst time.</p>
-        </div>
-        <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🌍 Real-Life Analogy</h3>
-          <p>A grocery store checkout line. If you are first in line, you get checked out first, even if the person behind you only has one item and you have a full cart.</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">⚙️ Key Characteristics</h3>
+          <p>It is strictly <strong>Non-Preemptive</strong>. Once a process gets the CPU, it holds onto it until it finishes its task. No interruptions allowed!</p>
         </div>
         <div className="bg-error/10 border border-error/30 p-4 rounded-xl">
-          <h3 className="font-bold text-xl text-error mb-2">⚠️ The "Convoy Effect" (Why it fails)</h3>
-          <p>If a massive, long-running process arrives first, all the short processes behind it get blocked. This drastically increases the average waiting time, like a slow truck holding up traffic on a one-lane road.</p>
+          <h3 className="font-bold text-xl text-error mb-2">⚠️ Exam Favorite: The "Convoy Effect"</h3>
+          <p>This is a major flaw! If a huge, heavy process arrives first, all the quick little processes behind it get stuck waiting forever. It's like one slow truck blocking traffic on a single-lane highway. This drastically hurts Average Waiting Time.</p>
         </div>
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">✅ When to use it?</h3>
-          <p>Best for batch systems where tasks run in the background and user responsiveness is not a priority. Never used in modern interactive systems (like your PC).</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🎯 Interview Question: When to use it?</h3>
+          <p>Would you use FCFS for an interactive desktop OS? <strong>No!</strong> Your mouse clicks would lag if a big download started. It's only good for simple batch processing systems where user experience doesn't matter.</p>
         </div>
       </div>
     </div>
   );
 
   const renderSJFPage = () => (
-    <div className="pl-8 pb-12 animate-fade-in font-handwritten">
+    <div className="pl-8 pb-12 font-handwritten">
       <h2 className="font-handwritten-title text-4xl text-primary font-bold mb-6 rotate-[-1deg]">
         2. Shortest Job First (SJF)
       </h2>
       <div className="space-y-6 text-on-surface-variant text-lg pr-4">
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 What is it?</h3>
-          <p>SJF tries to fix the Convoy Effect by prioritizing processes with the smallest CPU burst time. When the CPU is free, it scans the queue and picks the shortest job available.</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 The Basics</h3>
+          <p>SJF fixes the Convoy Effect. It scans the ready queue and always picks the process with the smallest execution time (burst time).</p>
         </div>
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">⚙️ How it works</h3>
-          <p>It is mathematically proven to provide the <strong>minimum average waiting time</strong> for a given set of processes. Standard SJF is <strong>Non-Preemptive</strong>.</p>
-        </div>
-        <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🌍 Real-Life Analogy</h3>
-          <p>The "10 items or less" express lane at a supermarket. People with fewer items get through quickly, keeping the line moving fast.</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🏆 Mathematical Perfection</h3>
+          <p>SJF is mathematically proven to give the <strong>minimum average waiting time</strong> for any given set of processes. Standard SJF is <strong>Non-Preemptive</strong>.</p>
         </div>
         <div className="bg-tertiary/10 border border-tertiary/30 p-4 rounded-xl">
-          <h3 className="font-bold text-xl text-tertiary mb-2">⚠️ Starvation (Why it fails)</h3>
-          <p>If a constant stream of short jobs keeps arriving, a large job will NEVER get its turn! This infinite delay is called <strong>Starvation</strong>.</p>
+          <h3 className="font-bold text-xl text-tertiary mb-2">⚠️ Exam Trap: "Starvation"</h3>
+          <p>What happens to a long 100-minute task if 1-minute tasks keep arriving continuously? The long task NEVER gets to run! This infinite waiting scenario is called <strong>Starvation</strong>.</p>
         </div>
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">✅ When to use it?</h3>
-          <p>Ideal when you know exactly how long a task will take in advance (e.g., rendering video frames). Hard to use in OS because predicting exact execution time is impossible!</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🎯 Interview Question: Is it practical?</h3>
+          <p>Can a real OS use SJF? <strong>No!</strong> The OS cannot predict exactly how long a future process will take. It's mostly a theoretical benchmark to compare other algorithms against.</p>
         </div>
       </div>
     </div>
   );
 
   const renderSRTFPage = () => (
-    <div className="pl-8 pb-12 animate-fade-in font-handwritten">
+    <div className="pl-8 pb-12 font-handwritten">
       <h2 className="font-handwritten-title text-4xl text-primary font-bold mb-6 rotate-[-1deg]">
         3. Shortest Remaining Time First (SRTF)
       </h2>
       <div className="space-y-6 text-on-surface-variant text-lg pr-4">
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 What is it?</h3>
-          <p>SRTF is the <strong>Preemptive</strong> superhero version of SJF. Instead of waiting for a process to finish, the CPU actively interrupts (preempts) the current process if a shorter one arrives.</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 The Basics</h3>
+          <p>SRTF is the <strong>Preemptive</strong> version of SJF. If a new process arrives that has a shorter burst time than what is <em>currently remaining</em> for the running process, the OS pauses the current one and switches!</p>
         </div>
         <div>
           <h3 className="font-bold text-xl text-on-surface mb-2">⚙️ How it works</h3>
-          <p>The CPU constantly checks: "Does this new arrival have a shorter burst time than what I currently have left to do?" If yes, it pauses the current task, saves its state, and runs the shorter one.</p>
-        </div>
-        <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🌍 Real-Life Analogy</h3>
-          <p>A doctor is performing a routine 1-hour checkup. Suddenly, a patient with a 2-minute emergency arrives. The doctor pauses the checkup (preemption), handles the emergency, and then returns to the checkup.</p>
+          <p>Imagine a doctor in a 1-hour surgery. Suddenly, a patient with a 2-minute emergency arrives. The doctor pauses the surgery (preemption), saves the state, handles the 2-minute emergency, and resumes the surgery.</p>
         </div>
         <div className="bg-surface-container border border-outline-variant p-4 rounded-xl">
-          <h3 className="font-bold text-xl text-on-surface mb-2">⚠️ Pros & Cons</h3>
-          <p><strong>Pro:</strong> Even better average wait times than SJF for newly arriving short jobs.<br/><strong>Con:</strong> High overhead! Constantly pausing and switching tasks (context switching) wastes CPU resources.</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">⚠️ The Cost of Preemption</h3>
+          <p>While SRTF provides incredible responsiveness for short tasks, it has a hidden cost: <strong>Context Switching</strong>. Constantly pausing, saving state, and loading a new process wastes valuable CPU cycles.</p>
         </div>
       </div>
     </div>
   );
 
   const renderPriorityPage = () => (
-    <div className="pl-8 pb-12 animate-fade-in font-handwritten">
+    <div className="pl-8 pb-12 font-handwritten">
       <h2 className="font-handwritten-title text-4xl text-primary font-bold mb-6 rotate-[-1deg]">
         4. Priority Scheduling
       </h2>
       <div className="space-y-6 text-on-surface-variant text-lg pr-4">
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 What is it?</h3>
-          <p>Every process is assigned a priority integer. The CPU always picks the process with the highest priority (usually denoted by the lowest number, e.g., Priority 1 is better than Priority 5).</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 The Basics</h3>
+          <p>Every process gets a VIP status (a priority number). The CPU always picks the highest priority process. It can be designed as preemptive or non-preemptive.</p>
         </div>
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">⚙️ How it works</h3>
-          <p>It can be both Preemptive or Non-Preemptive. Important system processes get high priority, while background user processes get low priority.</p>
-        </div>
-        <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🌍 Real-Life Analogy</h3>
-          <p>Boarding an airplane. First Class (Priority 1) boards first, then Business (Priority 2), then Economy (Priority 3).</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🌍 Real-World Use</h3>
+          <p>In modern OS like Linux or Windows, critical system tasks (like drawing your screen) have high priority, while background tasks (like downloading an update) have low priority.</p>
         </div>
         <div className="bg-primary/10 border border-primary/30 p-4 rounded-xl">
           <h3 className="font-bold text-xl text-primary mb-2">⚠️ The Solution to Starvation: "Aging"</h3>
-          <p>Low-priority processes can starve if VIPs keep arriving. The solution is <strong>Aging</strong>: As a low-priority process waits in line, the OS gradually increases its priority. Eventually, it becomes a VIP and gets executed!</p>
-        </div>
-        <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">✅ When to use it?</h3>
-          <p>Used heavily in real-world Operating Systems to ensure critical system tasks (like responding to mouse clicks) aren't blocked by background downloads.</p>
+          <p>Just like SJF, low priority processes can starve forever if VIPs keep arriving. The classic interview answer to fix this is <strong>Aging</strong>: As a low-priority process waits, the OS slowly increases its priority over time until it becomes a VIP!</p>
         </div>
       </div>
     </div>
   );
 
   const renderRRPage = () => (
-    <div className="pl-8 pb-12 animate-fade-in font-handwritten">
+    <div className="pl-8 pb-12 font-handwritten">
       <h2 className="font-handwritten-title text-4xl text-primary font-bold mb-6 rotate-[-1deg]">
         5. Round Robin (RR)
       </h2>
       <div className="space-y-6 text-on-surface-variant text-lg pr-4">
         <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 What is it?</h3>
-          <p>The fairest algorithm! It treats every process equally by giving them a strict time limit called a <strong>Time Quantum</strong>.</p>
+          <h3 className="font-bold text-xl text-on-surface mb-2">🤔 The Basics</h3>
+          <p>The ultimate fair algorithm! It gives every process a strict time limit called a <strong>Time Quantum</strong>. It is purely <strong>Preemptive</strong>.</p>
         </div>
         <div>
           <h3 className="font-bold text-xl text-on-surface mb-2">⚙️ How it works</h3>
-          <p>It is purely <strong>Preemptive</strong>. The CPU gives a process a small slice of time (e.g. 2ms). If it doesn't finish, it gets paused and sent to the back of the line to wait for its next turn.</p>
-        </div>
-        <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">🌍 Real-Life Analogy</h3>
-          <p>A debate where every speaker gets exactly 2 minutes at the podium. If they aren't done, the mic is cut and they go to the back of the line for another round.</p>
+          <p>Like a debate where everyone gets exactly 2 minutes at the microphone. If they aren't done, the mic cuts off, and they go to the back of the line to wait for another round. <strong>No one starves!</strong></p>
         </div>
         <div className="bg-secondary/10 border border-secondary/30 p-4 rounded-xl">
-          <h3 className="font-bold text-xl text-secondary mb-2">⚠️ The Golden Rule</h3>
-          <p><strong>No one starves!</strong> However, performance depends entirely on the Time Quantum. If it's too large, RR degrades into FCFS. If it's too small, the CPU wastes all its time context-switching instead of doing actual work.</p>
-        </div>
-        <div>
-          <h3 className="font-bold text-xl text-on-surface mb-2">✅ When to use it?</h3>
-          <p>This is the foundation of <strong>Time-Sharing</strong> and interactive systems (like Windows, macOS, Android). It guarantees that your browser, music player, and word processor all feel like they are running simultaneously.</p>
+          <h3 className="font-bold text-xl text-secondary mb-2">🎯 Exam Trap: Choosing the Quantum</h3>
+          <p>The performance of RR entirely depends on the Time Quantum.<br/>- <strong>Too large:</strong> It just turns into FCFS (poor response time).<br/>- <strong>Too small:</strong> The CPU spends more time Context-Switching than actually doing work!</p>
         </div>
       </div>
     </div>
   );
 
   const renderFinalExamPage = () => (
-    <div className="pl-8 pb-12 flex flex-col items-center justify-center h-full animate-fade-in pr-4">
+    <div className="pl-8 pb-12 flex flex-col items-center justify-center h-full pr-4 min-h-[400px]">
       <div className="mt-6 p-12 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 to-surface-container-lowest rounded-3xl border border-primary/30 flex flex-col items-center text-center shadow-lg relative overflow-hidden w-full max-w-2xl">
         <span className="material-symbols-outlined text-8xl text-primary mb-6 animate-bounce">workspace_premium</span>
         <h3 className="font-sans text-4xl font-black text-on-surface mb-4">The Final Exam</h3>
@@ -234,7 +217,7 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-background pt-16">
+    <div className="flex-1 flex flex-col h-full bg-background pt-16 min-h-0">
       
       {/* TOP HEADER */}
       <header className="fixed top-0 right-0 left-64 z-40 flex flex-col px-lg h-20 border-b border-outline-variant bg-surface-container-lowest/80 backdrop-blur-xl justify-center">
@@ -265,30 +248,52 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
       </header>
 
       {/* MAIN NOTEBOOK STAGE */}
-      <div className="flex-1 p-lg overflow-y-auto grid grid-cols-12 gap-lg bg-surface-container-low/30 mt-4">
+      <div className="flex-1 p-lg grid grid-cols-12 gap-lg bg-surface-container-low/30 mt-4 overflow-hidden min-h-0 h-full">
         
         {/* LEFT PAGE: The Notebook Paper */}
-        <div className="col-span-8 bg-surface border border-outline-variant rounded-2xl p-lg notebook-paper relative min-h-[700px] flex flex-col">
+        <div className="col-span-8 bg-surface border border-outline-variant rounded-2xl p-lg notebook-paper relative flex flex-col shadow-sm min-h-0 h-full">
           
           {/* Notebook Spiral Ring effect on the left margin */}
-          <div className="absolute left-3 top-0 bottom-0 w-4 flex flex-col justify-around py-4 opacity-30 pointer-events-none" aria-hidden="true">
+          <div className="absolute left-3 top-0 bottom-0 w-4 flex flex-col justify-around py-4 opacity-30 pointer-events-none z-10" aria-hidden="true">
             {[...Array(12)].map((_, i) => (
               <div key={i} className="w-4 h-4 rounded-full border-2 border-outline bg-surface-variant shadow-inner"></div>
             ))}
           </div>
 
-          <div className="flex-1 flex flex-col">
-            {currentPage === 0 && renderIntroPage()}
-            {currentPage === 1 && renderFCFSPage()}
-            {currentPage === 2 && renderSJFPage()}
-            {currentPage === 3 && renderSRTFPage()}
-            {currentPage === 4 && renderPriorityPage()}
-            {currentPage === 5 && renderRRPage()}
-            {currentPage === 6 && renderFinalExamPage()}
+          <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden pr-4 scrollbar-thin scrollbar-thumb-outline-variant scrollbar-track-transparent min-h-0 perspective-[1500px]">
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={currentPage}
+                custom={direction}
+                initial={(dir) => ({
+                  rotateY: dir > 0 ? 90 : -90,
+                  opacity: 0,
+                })}
+                animate={{
+                  rotateY: 0,
+                  opacity: 1,
+                }}
+                exit={(dir) => ({
+                  rotateY: dir > 0 ? -90 : 90,
+                  opacity: 0,
+                })}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                style={{ transformOrigin: 'left center' }}
+                className="flex-1 flex flex-col min-h-0"
+              >
+                {currentPage === 0 && renderIntroPage()}
+                {currentPage === 1 && renderFCFSPage()}
+                {currentPage === 2 && renderSJFPage()}
+                {currentPage === 3 && renderSRTFPage()}
+                {currentPage === 4 && renderPriorityPage()}
+                {currentPage === 5 && renderRRPage()}
+                {currentPage === 6 && renderFinalExamPage()}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Pagination Controls */}
-          <div className="mt-auto pt-6 border-t border-outline-variant flex justify-between items-center px-8">
+          <div className="mt-4 pt-4 border-t border-outline-variant flex justify-between items-center px-8 shrink-0">
             <button 
               onClick={prevPage} 
               disabled={currentPage === 0}
@@ -313,10 +318,10 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
         </div>
 
         {/* RIGHT SIDE: Interactive Widgets & Summary */}
-        <div className="col-span-4 flex flex-col gap-lg">
+        <div className="col-span-4 flex flex-col gap-lg overflow-y-auto pr-2 pb-8 scrollbar-thin scrollbar-thumb-outline-variant scrollbar-track-transparent min-h-0 h-full">
           
           {/* Comparative Summary Table (Always visible for reference) */}
-          <div className="bg-surface border border-outline-variant rounded-2xl p-md glass-panel">
+          <div className="bg-surface border border-outline-variant rounded-2xl p-md glass-panel shrink-0">
             <h3 className="text-headline-md font-bold text-on-surface mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-tertiary">table_chart</span>
               Summary Table
@@ -364,7 +369,7 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
 
           {/* Try It Yourself Sandbox */}
           {currentPage >= 1 && currentPage <= 5 && (
-            <div className="bg-surface border border-outline-variant rounded-2xl p-md relative glass-panel flex flex-col animate-fade-in">
+            <div className="bg-surface border border-outline-variant rounded-2xl p-md relative glass-panel flex flex-col animate-fade-in shrink-0">
               <h3 className="text-headline-md font-bold text-on-surface mb-4 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">science</span>
                 Try It Yourself!
@@ -424,13 +429,13 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
 
           {/* Contextual Sticky Note */}
           {currentPage === 2 && (
-            <div className="bg-purple-200 dark:bg-purple-900/60 text-purple-950 dark:text-purple-100 p-4 rounded-xl shadow-sm font-handwritten text-sm rotate-[1deg] border border-purple-300 animate-fade-in mt-4">
+            <div className="bg-purple-200 dark:bg-purple-900/60 text-purple-950 dark:text-purple-100 p-4 rounded-xl shadow-sm font-handwritten text-sm rotate-[1deg] border border-purple-300 animate-fade-in mt-4 shrink-0">
               <span className="font-bold uppercase tracking-wider block mb-1 text-[10px] text-purple-800 dark:text-purple-300">Observation</span>
               Notice how SJF forces long tasks to wait? That's starvation in action!
             </div>
           )}
           {currentPage === 5 && (
-            <div className="bg-sky-200 dark:bg-sky-900/60 text-sky-950 dark:text-sky-100 p-4 rounded-xl shadow-sm font-handwritten text-sm rotate-[-2deg] border border-sky-300 animate-fade-in mt-4">
+            <div className="bg-sky-200 dark:bg-sky-900/60 text-sky-950 dark:text-sky-100 p-4 rounded-xl shadow-sm font-handwritten text-sm rotate-[-2deg] border border-sky-300 animate-fade-in mt-4 shrink-0">
               <span className="font-bold uppercase tracking-wider block mb-1 text-[10px] text-sky-800 dark:text-sky-300">Pro Tip</span>
               Time Quantum is usually 10-100ms in modern OS!
             </div>
@@ -445,3 +450,5 @@ const LearningNotebook = ({ isDarkMode, setIsDarkMode }) => {
 };
 
 export default LearningNotebook;
+
+
