@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { SimulationProvider } from './context/SimulationContext';
+import { AuthContext } from './context/AuthContext';
 import Visualizer from './components/Visualizer';
 import LearningNotebook from './components/LearningNotebook';
 import QuizArena from './components/QuizArena';
+import AuthModal from './components/AuthModal';
+import ProfileModal from './components/ProfileModal';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const { user } = useContext(AuthContext);
 
   // Apply dark class to body for global scrollbars if needed, though we handle it on wrapper
   useEffect(() => {
@@ -37,7 +43,23 @@ function App() {
         <aside aria-label="Sidebar Navigation" className="fixed left-0 top-0 h-full flex flex-col w-64 border-r border-outline-variant bg-surface-container-lowest/80 backdrop-blur-xl z-50">
           <div className="p-lg">
             <h1 className="text-headline-md font-bold text-primary">CPU Visualizer</h1>
-            <p className="text-on-surface-variant text-sm mt-1">Guest Mode</p>
+            {user ? (
+              <div className="mt-4">
+                <p className="text-on-surface font-bold text-sm">Welcome, {user.username}</p>
+                <div className="flex items-center justify-between mt-2 mb-1">
+                  <span className="text-xs text-on-surface-variant font-medium">Progress</span>
+                  <span className="text-xs text-primary font-bold">{user.learningProgress}%</span>
+                </div>
+                <div className="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="bg-primary h-1.5 rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(var(--color-primary),0.5)]"
+                    style={{ width: `${user.learningProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-on-surface-variant text-sm mt-1">Guest Mode</p>
+            )}
           </div>
           <nav aria-label="Main Menu" className="flex-1 px-sm space-y-2 mt-md">
             <button 
@@ -66,10 +88,23 @@ function App() {
             </button>
           </nav>
           <div className="p-md border-t border-outline-variant">
-            <button className="w-full flex items-center justify-center gap-2 px-md py-2.5 rounded-xl bg-primary text-on-primary font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 text-sm">
-              <span className="material-symbols-outlined text-sm">login</span>
-              Log In
-            </button>
+            {user ? (
+              <button 
+                onClick={() => setIsProfileModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2 px-md py-2.5 rounded-xl bg-surface-container-highest text-on-surface font-bold hover:shadow-md transition-all active:scale-95 text-sm border border-outline-variant hover:border-primary"
+              >
+                <span className="material-symbols-outlined text-sm">account_circle</span>
+                Profile
+              </button>
+            ) : (
+              <button 
+                onClick={() => setIsAuthModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2 px-md py-2.5 rounded-xl bg-primary text-on-primary font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 text-sm"
+              >
+                <span className="material-symbols-outlined text-sm">login</span>
+                Log In
+              </button>
+            )}
           </div>
         </aside>
 
@@ -77,6 +112,9 @@ function App() {
         <main className="ml-64 relative h-screen flex">
           {renderPage()}
         </main>
+
+        <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+        <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
       </div>
     </SimulationProvider>
   );
