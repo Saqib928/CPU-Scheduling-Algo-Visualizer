@@ -9,7 +9,16 @@ import ProfileModal from './components/ProfileModal';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Read initial tab from URL path
+  const getInitialTab = () => {
+    const path = window.location.pathname;
+    if (path === '/notebook') return 'notebook';
+    if (path === '/quiz') return 'quiz';
+    return 'dashboard';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { user } = useContext(AuthContext);
@@ -23,12 +32,35 @@ function App() {
     }
   }, [isDarkMode]);
 
+  // Synchronize history state
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    const path = tabName === 'dashboard' ? '/' : `/${tabName}`;
+    window.history.pushState({ tab: tabName }, '', path);
+  };
+
+  useEffect(() => {
+    const handlePopState = (event) => {
+      const path = window.location.pathname;
+      if (path === '/notebook') {
+        setActiveTab('notebook');
+      } else if (path === '/quiz') {
+        setActiveTab('quiz');
+      } else {
+        setActiveTab('dashboard');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const renderPage = () => {
     switch (activeTab) {
       case 'dashboard':
         return <Visualizer isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
       case 'notebook':
-        return <LearningNotebook isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
+        return <LearningNotebook isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} onNavigate={handleTabChange} />;
       case 'quiz':
         return <QuizArena isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
       default:
@@ -52,18 +84,33 @@ function App() {
                 </div>
                 <div className="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
                   <div 
-                    className="bg-primary h-1.5 rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(var(--color-primary),0.5)]"
-                    style={{ width: `${user.learningProgress}%` }}
+                     className="bg-primary h-1.5 rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(var(--color-primary),0.5)]"
+                     style={{ width: `${user.learningProgress}%` }}
                   ></div>
                 </div>
               </div>
-            ) : (
-              <p className="text-on-surface-variant text-sm mt-1">Guest Mode</p>
-            )}
+            ) : (() => {
+              const guestProgress = JSON.parse(localStorage.getItem('guest_progress')) || { learningProgress: 0 };
+              return (
+                <div className="mt-4">
+                  <p className="text-on-surface font-bold text-sm">Guest Mode</p>
+                  <div className="flex items-center justify-between mt-2 mb-1">
+                    <span className="text-xs text-on-surface-variant font-medium">Progress</span>
+                    <span className="text-xs text-primary font-bold">{guestProgress.learningProgress}%</span>
+                  </div>
+                  <div className="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+                    <div 
+                       className="bg-primary h-1.5 rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(var(--color-primary),0.5)]"
+                       style={{ width: `${guestProgress.learningProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           <nav aria-label="Main Menu" className="flex-1 px-sm space-y-2 mt-md">
             <button 
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => handleTabChange('dashboard')}
               aria-current={activeTab === 'dashboard' ? 'page' : undefined} 
               className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'text-primary font-bold border border-primary bg-primary/5' : 'text-on-surface-variant font-medium border border-outline-variant hover:border-primary hover:shadow-[0_0_10px_rgba(var(--color-primary),0.3)]'}`}
             >
@@ -71,7 +118,7 @@ function App() {
               <span>Dashboard</span>
             </button>
             <button 
-              onClick={() => setActiveTab('notebook')}
+              onClick={() => handleTabChange('notebook')}
               aria-current={activeTab === 'notebook' ? 'page' : undefined} 
               className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'notebook' ? 'text-primary font-bold border border-primary bg-primary/5' : 'text-on-surface-variant font-medium border border-outline-variant hover:border-primary hover:shadow-[0_0_10px_rgba(var(--color-primary),0.3)]'}`}
             >
@@ -79,7 +126,7 @@ function App() {
               <span>Learning Notebook</span>
             </button>
             <button 
-              onClick={() => setActiveTab('quiz')}
+              onClick={() => handleTabChange('quiz')}
               aria-current={activeTab === 'quiz' ? 'page' : undefined} 
               className={`w-full flex items-center gap-3 px-md py-3 rounded-xl transition-all ${activeTab === 'quiz' ? 'text-primary font-bold border border-primary bg-primary/5' : 'text-on-surface-variant font-medium border border-outline-variant hover:border-primary hover:shadow-[0_0_10px_rgba(var(--color-primary),0.3)]'}`}
             >

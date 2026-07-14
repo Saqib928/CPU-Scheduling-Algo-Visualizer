@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
+import dns from 'dns';
 import User from './models/User.js';
 import { protect } from './middleware/auth.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
@@ -17,10 +18,37 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/os-algo')
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Set DNS servers for SRV record resolution if using MongoDB Atlas
+if (process.env.MONGO_URI && process.env.MONGO_URI.startsWith('mongodb+srv')) {
+  try {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+  } catch (dnsErr) {
+    console.warn('Failed to set custom DNS servers for MongoDB Atlas resolution:', dnsErr);
+  }
+}
+
+// Connect to MongoDB with local fallback
+const connectDB = async () => {
+  const primaryURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/os-algo';
+  try {
+    await mongoose.connect(primaryURI);
+    console.log('MongoDB Connected successfully');
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    // If the primary connection failed and it was Atlas, try connecting to the local fallback
+    if (primaryURI.startsWith('mongodb+srv')) {
+      console.log('Attempting to connect to local MongoDB fallback (mongodb://127.0.0.1:27017/os-algo)...');
+      try {
+        await mongoose.connect('mongodb://127.0.0.1:27017/os-algo');
+        console.log('MongoDB Connected to local fallback');
+      } catch (fallbackErr) {
+        console.error('Local MongoDB fallback connection failed:', fallbackErr);
+      }
+    }
+  }
+};
+
+connectDB();
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'OS Algo Visualizer Backend is running' });
