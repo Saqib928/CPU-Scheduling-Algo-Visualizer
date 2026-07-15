@@ -6,15 +6,34 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import dns from 'dns';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import morgan from 'morgan';
 import User from './models/User.js';
 import { protect } from './middleware/auth.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined.');
+  process.exit(1);
+}
+
 const app = express();
+app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
 app.use(express.json());
+app.use(mongoSanitize());
+app.use(morgan('combined'));
+
+// Global rate limiting
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again later.' }
+});
+app.use('/api', globalLimiter);
 
 const PORT = process.env.PORT || 5000;
 
@@ -62,7 +81,7 @@ const authLimiter = rateLimit({
 });
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', { expiresIn: '30d' });
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 app.post('/api/auth/register', authLimiter, async (req, res, next) => {
